@@ -8,6 +8,7 @@ const levels = [
     hint: '小光一開始面向上方。先沿著直路前進，再轉向第二顆核心。',
     concept: '指令順序',
     coreName: '記憶核心',
+    successMessage: '小光找回了記憶。',
     duration: '約 2 分鐘',
     start: { x: 0, y: 4, direction: 0 },
     cores: [{ x: 0, y: 2 }, { x: 2, y: 2 }],
@@ -20,11 +21,25 @@ const levels = [
     hint: '長走廊裡有很多相同的前進動作。試著用「重複前進」縮短程式。',
     concept: '循環：重複指令',
     coreName: '能源晶片',
+    successMessage: '小光修好了中繼站，訊號重新亮起。',
     duration: '約 3 分鐘',
     start: { x: 0, y: 4, direction: 0 },
     cores: [{ x: 0, y: 1 }, { x: 5, y: 1 }],
     walls: [{ x: 2, y: 4 }, { x: 3, y: 4 }, { x: 4, y: 4 }],
     exit: { x: 5, y: 4 }
+  },
+  {
+    title: '穿越巡檢區',
+    description: '巡檢門擋住了小光。判斷前方狀況，收集電池，再抵達安全出口。',
+    hint: '若前方有牆，條件就成立，小光會右轉；前方通暢時，方向保持不變。',
+    concept: '條件：如果…就…',
+    coreName: '電池',
+    successMessage: '小光判斷出安全路線，成功通過巡檢區。',
+    duration: '約 3 分鐘',
+    start: { x: 0, y: 4, direction: 0 },
+    cores: [{ x: 2, y: 4 }, { x: 5, y: 2 }],
+    walls: [{ x: 0, y: 3 }, { x: 4, y: 3 }],
+    exit: { x: 5, y: 0 }
   }
 ];
 
@@ -32,7 +47,8 @@ const commandInfo = {
   forward: { label: '前進', icon: '↑' },
   left: { label: '左轉', icon: '↶' },
   right: { label: '右轉', icon: '↷' },
-  repeatForward: { label: '重複前進', icon: '⟳' }
+  repeatForward: { label: '重複前進', icon: '⟳' },
+  ifBlockedRight: { label: '若前方有障礙，就右轉', icon: '?' }
 };
 
 let currentLevelIndex = 0;
@@ -76,6 +92,7 @@ function renderLevel() {
   document.querySelector('#concept-name').textContent = level.concept;
   document.querySelector('#objective-core-label').textContent = `收集${level.coreName}`;
   document.querySelector('#repeat-control').hidden = currentLevelIndex === 0;
+  document.querySelector('#condition-command').hidden = currentLevelIndex < 2;
   nextLevelButton.hidden = true;
 }
 
@@ -230,7 +247,8 @@ function completeLevel() {
   }
   playTone(660, 0.18, 'sine', 0.04);
   setTimeout(() => playTone(990, 0.3, 'sine', 0.04), 100);
-  setMessage(currentLevelIndex < levels.length - 1 ? '任務完成！小光找回記憶，下一區已解鎖。' : '任務完成！小光修好了中繼站，訊號重新亮起。', 'success');
+  const nextAreaMessage = currentLevelIndex < levels.length - 1 ? ' 下一區已解鎖。' : '';
+  setMessage(`任務完成！${currentLevel().successMessage}${nextAreaMessage}`, 'success');
   nextLevelButton.hidden = currentLevelIndex >= levels.length - 1;
   setBusy(false);
 }
@@ -250,6 +268,22 @@ async function execute() {
 
   for (let index = 0; index < commands.length; index++) {
     const command = commands[index];
+    if (command.type === 'ifBlockedRight') {
+      await delay(260);
+      const direction = directions[robot.direction];
+      const next = { x: robot.x + direction.x, y: robot.y + direction.y };
+      const blocked = next.x < 0 || next.x >= width || next.y < 0 || next.y >= height || currentLevel().walls.some(tile => tile.x === next.x && tile.y === next.y);
+      if (blocked) {
+        robot.direction = (robot.direction + 1) % 4;
+        playTone(760, 0.12, 'triangle', 0.035);
+        setMessage('條件成立：前方有障礙，小光判斷後右轉。');
+      } else {
+        playTone(500, 0.08, 'sine', 0.02);
+        setMessage('條件不成立：前方通暢，小光保持方向。');
+      }
+      renderGrid();
+      continue;
+    }
     if (command.type === 'left' || command.type === 'right') {
       await delay(220);
       robot.direction = (robot.direction + (command.type === 'left' ? 3 : 1)) % 4;
