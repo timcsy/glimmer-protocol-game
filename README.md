@@ -17,6 +17,14 @@
 - [初學者試玩指南](knowledge/playtest-guide.md)
 - [待外部支援事項與推薦](knowledge/decision.md)
 
+## 自動檢查
+
+需要 Node.js 內建測試執行器：
+
+```powershell
+node --test tests/game.test.js
+```
+
 ## 發布到 GitHub Pages
 
 專案已包含 GitHub Actions 工作流程 `.github/workflows/pages.yml`。將 `main` 分支推送到 GitHub 後，在儲存庫的 **Settings → Pages → Build and deployment** 將來源設為 **GitHub Actions**。之後每次更新 `main` 都會自動部署。
