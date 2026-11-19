@@ -40,6 +40,19 @@ const levels = [
     cores: [{ x: 2, y: 4 }, { x: 5, y: 2 }],
     walls: [{ x: 0, y: 3 }, { x: 4, y: 3 }],
     exit: { x: 5, y: 0 }
+  },
+  {
+    title: '雙路徑逃生',
+    description: '巡檢門後有兩條岔路。依照前方狀況選擇轉彎方向，收集晶片並抵達出口。',
+    hint: '同一條件會在兩個位置各執行一次：遇到牆時右轉，前方通暢時左轉。',
+    concept: '分支：如果／否則',
+    coreName: '資料晶片',
+    successMessage: '小光依照兩次判斷走對岔路，帶著資料安全離開。',
+    duration: '約 4 分鐘',
+    start: { x: 0, y: 4, direction: 0 },
+    cores: [{ x: 2, y: 4 }, { x: 2, y: 2 }],
+    walls: [{ x: 0, y: 3 }, { x: 1, y: 2 }, { x: 4, y: 3 }],
+    exit: { x: 2, y: 0 }
   }
 ];
 
@@ -48,8 +61,10 @@ const commandInfo = {
   left: { label: '左轉', icon: '↶' },
   right: { label: '右轉', icon: '↷' },
   repeatForward: { label: '重複前進', icon: '⟳' },
-  ifBlockedRight: { label: '若前方有障礙，就右轉', icon: '?' }
+  ifBlockedRight: { label: '若前方有障礙，就右轉', icon: '?' },
+  ifElseBlocked: { label: '如果／否則', icon: '{ }' }
 };
+const levelShortNames = ['序列', '循環', '判斷', '分支'];
 
 let currentLevelIndex = 0;
 let commands = [];
@@ -79,6 +94,16 @@ function currentLevel() { return levels[currentLevelIndex]; }
 function isAtExit() { return robot.x === currentLevel().exit.x && robot.y === currentLevel().exit.y; }
 function hasWon() { return isAtExit() && collected.size === currentLevel().cores.length; }
 function repeatCount(command) { return command.type === 'repeatForward' ? command.count : 1; }
+function actionLabel(action) { return action === 'left' ? '左轉' : action === 'right' ? '右轉' : '不轉彎'; }
+function isBlockedAhead() {
+  const direction = directions[robot.direction];
+  const next = { x: robot.x + direction.x, y: robot.y + direction.y };
+  return next.x < 0 || next.x >= width || next.y < 0 || next.y >= height || currentLevel().walls.some(tile => tile.x === next.x && tile.y === next.y);
+}
+function applyTurn(action) {
+  if (action === 'left') robot.direction = (robot.direction + 3) % 4;
+  if (action === 'right') robot.direction = (robot.direction + 1) % 4;
+}
 
 function renderLevel() {
   const level = currentLevel();
@@ -93,7 +118,32 @@ function renderLevel() {
   document.querySelector('#objective-core-label').textContent = `收集${level.coreName}`;
   document.querySelector('#repeat-control').hidden = currentLevelIndex === 0;
   document.querySelector('#condition-command').hidden = currentLevelIndex < 2;
+  document.querySelector('#branch-control').hidden = currentLevelIndex < 3;
   nextLevelButton.hidden = true;
+  renderLevelSelector();
+}
+
+function renderLevelSelector() {
+  const levelList = document.querySelector('#level-list');
+  levelList.replaceChildren();
+  levels.forEach((level, index) => {
+    const button = document.createElement('button');
+    const unlocked = index <= unlockedLevelIndex;
+    button.type = 'button';
+    button.className = `level-tab${index === currentLevelIndex ? ' active' : ''}`;
+    button.disabled = !unlocked || running;
+    button.setAttribute('aria-label', unlocked ? `第 ${index + 1} 區：${level.title}` : `第 ${index + 1} 區：尚未解鎖`);
+    if (index === currentLevelIndex) button.setAttribute('aria-current', 'step');
+    const number = document.createElement('span');
+    number.className = 'tab-number';
+    number.textContent = String(index + 1).padStart(2, '0');
+    const name = document.createElement('span');
+    name.className = 'tab-name';
+    name.textContent = unlocked ? levelShortNames[index] : '鎖定';
+    button.append(number, name);
+    button.addEventListener('click', () => loadLevel(index));
+    levelList.append(button);
+  });
 }
 
 function renderGrid() {
@@ -159,7 +209,13 @@ function renderCommands() {
       icon.className = 'chip-icon';
       icon.textContent = commandInfo[command.type].icon;
       const label = document.createElement('span');
-      label.textContent = command.type === 'repeatForward' ? `${commandInfo[command.type].label} × ${command.count}` : commandInfo[command.type].label;
+      if (command.type === 'repeatForward') {
+        label.textContent = `${commandInfo[command.type].label} × ${command.count}`;
+      } else if (command.type === 'ifElseBlocked') {
+        label.textContent = `有障礙→${actionLabel(command.blockedAction)}；否則→${actionLabel(command.clearAction)}`;
+      } else {
+        label.textContent = commandInfo[command.type].label;
+      }
       const remove = document.createElement('button');
       remove.type = 'button';
       remove.className = 'remove-command';
@@ -187,8 +243,9 @@ function setMessage(message, state = '') {
 function setBusy(busy) {
   running = busy;
   runButton.disabled = busy;
-  document.querySelectorAll('.command-button, .reset-button, .remove-command, #clear-button, #repeat-count').forEach(button => button.disabled = busy);
+  document.querySelectorAll('.command-button, .reset-button, .remove-command, #clear-button, #repeat-count, #blocked-action, #clear-action').forEach(button => button.disabled = busy);
   nextLevelButton.disabled = busy;
+  document.querySelectorAll('.level-tab').forEach(button => button.disabled = busy || button.getAttribute('aria-label')?.includes('尚未解鎖'));
 }
 
 function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
@@ -245,6 +302,7 @@ function completeLevel() {
   } catch {
     // The level remains unlocked for this session if storage is unavailable.
   }
+  renderLevelSelector();
   playTone(660, 0.18, 'sine', 0.04);
   setTimeout(() => playTone(990, 0.3, 'sine', 0.04), 100);
   const nextAreaMessage = currentLevelIndex < levels.length - 1 ? ' 下一區已解鎖。' : '';
@@ -268,18 +326,17 @@ async function execute() {
 
   for (let index = 0; index < commands.length; index++) {
     const command = commands[index];
-    if (command.type === 'ifBlockedRight') {
+    if (command.type === 'ifBlockedRight' || command.type === 'ifElseBlocked') {
       await delay(260);
-      const direction = directions[robot.direction];
-      const next = { x: robot.x + direction.x, y: robot.y + direction.y };
-      const blocked = next.x < 0 || next.x >= width || next.y < 0 || next.y >= height || currentLevel().walls.some(tile => tile.x === next.x && tile.y === next.y);
+      const blocked = isBlockedAhead();
+      const action = command.type === 'ifBlockedRight' ? (blocked ? 'right' : 'stay') : (blocked ? command.blockedAction : command.clearAction);
+      applyTurn(action);
       if (blocked) {
-        robot.direction = (robot.direction + 1) % 4;
         playTone(760, 0.12, 'triangle', 0.035);
-        setMessage('條件成立：前方有障礙，小光判斷後右轉。');
+        setMessage(command.type === 'ifElseBlocked' ? `條件成立：前方有障礙，小光選擇${actionLabel(action)}。` : '條件成立：前方有障礙，小光判斷後右轉。');
       } else {
         playTone(500, 0.08, 'sine', 0.02);
-        setMessage('條件不成立：前方通暢，小光保持方向。');
+        setMessage(command.type === 'ifElseBlocked' ? `條件不成立：前方通暢，小光選擇${actionLabel(action)}。` : '條件不成立：前方通暢，小光保持方向。');
       }
       renderGrid();
       continue;
@@ -357,6 +414,18 @@ document.querySelector('#add-repeat').addEventListener('click', () => {
   nextLevelButton.hidden = true;
   renderCommands();
   setMessage(`已加入重複前進 ${count} 次的循環指令。`);
+});
+
+document.querySelector('#add-branch').addEventListener('click', () => {
+  if (running) return;
+  commands.push({
+    type: 'ifElseBlocked',
+    blockedAction: document.querySelector('#blocked-action').value,
+    clearAction: document.querySelector('#clear-action').value
+  });
+  nextLevelButton.hidden = true;
+  renderCommands();
+  setMessage('判斷方塊已加入。小光會依照前方狀況選擇其中一個分支。');
 });
 
 document.querySelector('#clear-button').addEventListener('click', () => {
