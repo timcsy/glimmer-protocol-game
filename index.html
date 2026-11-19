@@ -13,7 +13,7 @@
   <main class="shell">
     <header class="topbar">
       <a class="brand" href="#" aria-label="微光協定首頁"><span class="brand-mark">✦</span> 微光協定</a>
-      <div class="top-note"><span class="pulse"></span> 新手任務 <span class="slash">/</span> 第 01 區</div>
+      <div class="top-note"><span class="pulse"></span> 新手任務 <span class="slash">/</span> 第 <span id="top-level-number">01</span> 區</div>
       <button class="icon-button" id="sound-toggle" aria-label="切換音效" title="音效開關">♫</button>
     </header>
 
@@ -23,7 +23,7 @@
         <h1>讓小光找到回家的路<span>.</span></h1>
         <p class="subtitle">把指令排好，啟動機器人。記憶核心和出口都在等你。</p>
       </div>
-      <div class="level-badge"><span>任務</span><strong>01</strong><span class="badge-divider"></span><span>約 2 分鐘</span></div>
+      <div class="level-badge"><span>任務</span><strong id="level-number">01</strong><span class="badge-divider"></span><span id="level-duration">約 2 分鐘</span></div>
     </section>
 
     <section class="game-layout" aria-label="遊戲區">
@@ -43,14 +43,14 @@
 
       <aside class="mission panel">
         <div class="panel-heading"><span class="panel-label">任務簡報</span><span class="mission-icon">⌁</span></div>
-        <h2>找回失落記憶</h2>
-        <p class="mission-copy">資料庫斷電了。收集散落的記憶核心，再帶小光走到出口。</p>
+        <h2 id="mission-title">找回失落記憶</h2>
+        <p class="mission-copy" id="mission-copy">資料庫斷電了。收集散落的記憶核心，再帶小光走到出口。</p>
         <div class="objectives">
-          <div class="objective" id="objective-cores"><span class="check-ring"></span><span>收集記憶核心</span><strong id="objective-progress">0 / 2</strong></div>
+          <div class="objective" id="objective-cores"><span class="check-ring"></span><span id="objective-core-label">收集記憶核心</span><strong id="objective-progress">0 / 2</strong></div>
           <div class="objective" id="objective-exit"><span class="check-ring"></span><span>抵達出口</span><strong>未抵達</strong></div>
         </div>
-        <div class="tip"><span class="tip-star">✳</span><div><strong>小提示</strong><p>小光一開始面向上方。轉彎也要寫成一個指令喔。</p></div></div>
-        <div class="learn-note"><span class="learn-icon">{ }</span><span>你正在學：<strong>指令順序</strong></span></div>
+        <div class="tip"><span class="tip-star">✳</span><div><strong>小提示</strong><p id="level-hint">小光一開始面向上方。轉彎也要寫成一個指令喔。</p></div></div>
+        <div class="learn-note"><span class="learn-icon">{ }</span><span>你正在學：<strong id="concept-name">指令順序</strong></span></div>
       </aside>
     </section>
 
@@ -63,6 +63,11 @@
         <button class="command-button" data-command="forward"><span class="command-symbol">↑</span><span>前進</span></button>
         <button class="command-button" data-command="left"><span class="command-symbol">↶</span><span>左轉</span></button>
         <button class="command-button" data-command="right"><span class="command-symbol">↷</span><span>右轉</span></button>
+        <div class="repeat-control" id="repeat-control" hidden>
+          <label for="repeat-count">重複前進</label>
+          <select id="repeat-count" aria-label="重複前進次數"><option value="2">× 2</option><option value="3" selected>× 3</option><option value="4">× 4</option><option value="5">× 5</option></select>
+          <button class="command-button repeat-button" id="add-repeat" type="button"><span class="command-symbol">⟳</span><span>加入循環</span></button>
+        </div>
         <button class="command-button clear-button" id="clear-button"><span class="command-symbol">⌫</span><span>清空</span></button>
       </div>
       <div class="sequence-area">
@@ -71,7 +76,7 @@
       </div>
       <div class="program-bottom">
         <p class="feedback" id="feedback" aria-live="polite">先加入幾個指令，幫小光規劃路線。</p>
-        <div class="actions"><button class="reset-button" id="reset-button">重新開始</button><button class="run-button" id="run-button"><span>▶</span> 執行程式</button></div>
+        <div class="actions"><button class="next-button" id="next-level-button" hidden>前往下一區 <span>→</span></button><button class="reset-button" id="reset-button">重新開始</button><button class="run-button" id="run-button"><span>▶</span> 執行程式</button></div>
       </div>
     </section>
     <footer><span>微光協定 <span class="footer-dot">✦</span> 邊玩邊學程式</span><span>序章 · 記憶檔案庫</span></footer>
