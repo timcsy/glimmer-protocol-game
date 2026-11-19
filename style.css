@@ -22,6 +22,10 @@
 .branch-button:hover{background:#625044}
 .command-chip .remove-command{display:grid;place-items:center;width:18px;height:18px;margin-left:2px;padding:0;border:0;border-radius:4px;background:#30485a;color:#9eb4c5;font:15px var(--font);line-height:1;cursor:pointer}
 .command-chip .remove-command:hover{background:#744d58;color:#fff}
+.command-chip .move-command{display:grid;place-items:center;width:17px;height:18px;margin-left:-3px;padding:0;border:0;border-radius:4px;background:#29394a;color:#9eb5c7;font:10px var(--mono);line-height:1;cursor:pointer}
+.command-chip .move-command:hover:not(:disabled){background:#35596a;color:#d6f4f4}
+.command-chip .move-command:disabled{opacity:.3;cursor:not-allowed}
+.command-chip .remove-command:focus-visible,.command-chip .move-command:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
 .next-button{height:34px;padding:0 12px;border:1px solid #438e79;border-radius:7px;background:#21483f;color:#a9f0cf;font:11px var(--font);cursor:pointer}
 .next-button:hover{background:#2a5a4d}
 .next-button span{margin-left:4px}

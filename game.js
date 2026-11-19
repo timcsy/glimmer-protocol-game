@@ -216,6 +216,20 @@ function renderCommands() {
       } else {
         label.textContent = commandInfo[command.type].label;
       }
+      const moveUp = document.createElement('button');
+      moveUp.type = 'button';
+      moveUp.className = 'move-command';
+      moveUp.textContent = '↑';
+      moveUp.disabled = index === 0;
+      moveUp.setAttribute('aria-label', `將第 ${index + 1} 個指令上移`);
+      moveUp.addEventListener('click', () => moveCommand(index, index - 1));
+      const moveDown = document.createElement('button');
+      moveDown.type = 'button';
+      moveDown.className = 'move-command';
+      moveDown.textContent = '↓';
+      moveDown.disabled = index === commands.length - 1;
+      moveDown.setAttribute('aria-label', `將第 ${index + 1} 個指令下移`);
+      moveDown.addEventListener('click', () => moveCommand(index, index + 1));
       const remove = document.createElement('button');
       remove.type = 'button';
       remove.className = 'remove-command';
@@ -227,7 +241,7 @@ function renderCommands() {
         renderCommands();
         setMessage('已移除這個指令，可以接著調整路線。');
       });
-      item.append(number, icon, label, remove);
+      item.append(number, icon, label, moveUp, moveDown, remove);
       sequence.append(item);
     });
   }
@@ -240,10 +254,17 @@ function setMessage(message, state = '') {
   feedback.className = `feedback${state ? ` ${state}` : ''}`;
 }
 
+function moveCommand(from, to) {
+  if (running || to < 0 || to >= commands.length) return;
+  [commands[from], commands[to]] = [commands[to], commands[from]];
+  renderCommands();
+  setMessage('指令順序已調整。執行看看新的路線吧。');
+}
+
 function setBusy(busy) {
   running = busy;
   runButton.disabled = busy;
-  document.querySelectorAll('.command-button, .reset-button, .remove-command, #clear-button, #repeat-count, #blocked-action, #clear-action').forEach(button => button.disabled = busy);
+  document.querySelectorAll('.command-button, .reset-button, .remove-command, .move-command, #clear-button, #repeat-count, #blocked-action, #clear-action').forEach(button => button.disabled = busy);
   nextLevelButton.disabled = busy;
   document.querySelectorAll('.level-tab').forEach(button => button.disabled = busy || button.getAttribute('aria-label')?.includes('尚未解鎖'));
 }
