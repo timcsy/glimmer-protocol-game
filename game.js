@@ -68,6 +68,7 @@ const levelShortNames = ['序列', '循環', '判斷', '分支'];
 
 let currentLevelIndex = 0;
 let commands = [];
+let activeCommandIndex = -1;
 let robot = { ...levels[0].start };
 let collected = new Set();
 let running = false;
@@ -202,6 +203,10 @@ function renderCommands() {
     commands.forEach((command, index) => {
       const item = document.createElement('li');
       item.className = 'command-chip';
+      if (index === activeCommandIndex) {
+        item.classList.add('active');
+        item.setAttribute('aria-current', 'step');
+      }
       const number = document.createElement('span');
       number.className = 'number';
       number.textContent = String(index + 1).padStart(2, '0');
@@ -237,6 +242,7 @@ function renderCommands() {
       remove.setAttribute('aria-label', `刪除第 ${index + 1} 個指令`);
       remove.addEventListener('click', () => {
         if (running) return;
+        activeCommandIndex = -1;
         commands.splice(index, 1);
         renderCommands();
         setMessage('已移除這個指令，可以接著調整路線。');
@@ -256,9 +262,24 @@ function setMessage(message, state = '') {
 
 function moveCommand(from, to) {
   if (running || to < 0 || to >= commands.length) return;
+  activeCommandIndex = -1;
   [commands[from], commands[to]] = [commands[to], commands[from]];
   renderCommands();
   setMessage('指令順序已調整。執行看看新的路線吧。');
+}
+
+function highlightCommand(index) {
+  if (activeCommandIndex >= 0) {
+    const previous = sequence.children[activeCommandIndex];
+    previous?.classList.remove('active');
+    previous?.removeAttribute('aria-current');
+  }
+  activeCommandIndex = index;
+  if (index >= 0) {
+    const current = sequence.children[index];
+    current?.classList.add('active');
+    current?.setAttribute('aria-current', 'step');
+  }
 }
 
 function setBusy(busy) {
@@ -340,12 +361,14 @@ async function execute() {
   }
   robot = { ...currentLevel().start };
   collected = new Set();
+  highlightCommand(-1);
   nextLevelButton.hidden = true;
   renderGrid();
   setBusy(true);
   setMessage('小光啟動中…看好每個指令的執行順序。');
 
   for (let index = 0; index < commands.length; index++) {
+    highlightCommand(index);
     const command = commands[index];
     if (command.type === 'ifBlockedRight' || command.type === 'ifElseBlocked') {
       await delay(260);
@@ -398,6 +421,7 @@ async function execute() {
 function resetGame(clearCommands = true) {
   robot = { ...currentLevel().start };
   collected = new Set();
+  highlightCommand(-1);
   if (clearCommands) commands = [];
   nextLevelButton.hidden = true;
   renderGrid();
@@ -409,6 +433,7 @@ function loadLevel(index) {
   if (index > unlockedLevelIndex || index >= levels.length) return;
   currentLevelIndex = index;
   commands = [];
+  activeCommandIndex = -1;
   robot = { ...currentLevel().start };
   collected = new Set();
   try { localStorage.setItem('glimmer-current-level', String(index)); } catch { /* Optional progress save. */ }
@@ -421,6 +446,7 @@ function loadLevel(index) {
 document.querySelectorAll('.command-button[data-command]').forEach(button => {
   button.addEventListener('click', () => {
     if (running) return;
+    activeCommandIndex = -1;
     commands.push({ type: button.dataset.command });
     nextLevelButton.hidden = true;
     renderCommands();
@@ -430,6 +456,7 @@ document.querySelectorAll('.command-button[data-command]').forEach(button => {
 
 document.querySelector('#add-repeat').addEventListener('click', () => {
   if (running) return;
+  activeCommandIndex = -1;
   const count = Number(document.querySelector('#repeat-count').value);
   commands.push({ type: 'repeatForward', count });
   nextLevelButton.hidden = true;
@@ -439,6 +466,7 @@ document.querySelector('#add-repeat').addEventListener('click', () => {
 
 document.querySelector('#add-branch').addEventListener('click', () => {
   if (running) return;
+  activeCommandIndex = -1;
   commands.push({
     type: 'ifElseBlocked',
     blockedAction: document.querySelector('#blocked-action').value,
@@ -451,6 +479,7 @@ document.querySelector('#add-branch').addEventListener('click', () => {
 
 document.querySelector('#clear-button').addEventListener('click', () => {
   if (running) return;
+  activeCommandIndex = -1;
   commands = [];
   renderCommands();
   setMessage('指令已清空，重新安排一條路線吧。');

@@ -37,6 +37,7 @@ class FakeElement {
   append(...children) { this.children.push(...children); }
   addEventListener(name, callback) { this.listeners[name] = callback; }
   setAttribute(name, value) { this.attributes[name] = String(value); }
+  removeAttribute(name) { delete this.attributes[name]; }
   getAttribute(name) { return this.attributes[name] ?? null; }
 }
 
@@ -164,6 +165,28 @@ test('指令可上移、下移與單獨刪除', () => {
   firstChip = document.querySelector('#sequence').children[0];
   firstChip.children.find(button => button.className === 'remove-command').listeners.click();
   assert.equal(run(context, 'commands.length'), 2);
+});
+
+test('執行時只高亮目前的指令，並標記為目前步驟', async () => {
+  const { context, document } = createGame();
+  const releases = [];
+  run(context, `commands = [{ type: 'forward' }, { type: 'right' }]; renderCommands(); delay = () => new Promise(resolve => globalThis.testReleases.push(resolve))`);
+  context.testReleases = releases;
+  const execution = run(context, 'execute()');
+  const sequence = document.querySelector('#sequence');
+  assert.equal(sequence.children[0].getAttribute('aria-current'), 'step');
+  assert.equal(sequence.children[1].getAttribute('aria-current'), null);
+
+  releases.shift()();
+  for (let attempt = 0; attempt < 10 && releases.length === 0; attempt++) {
+    await new Promise(resolve => setImmediate(resolve));
+  }
+  assert.equal(releases.length, 1, 'the next command should begin after the first move');
+  assert.equal(sequence.children[0].getAttribute('aria-current'), null);
+  assert.equal(sequence.children[1].getAttribute('aria-current'), 'step');
+
+  releases.shift()();
+  await execution;
 });
 
 test('已解鎖關卡可重玩，未解鎖關卡仍鎖定，進度可跨載入保留', async () => {
