@@ -1,6 +1,6 @@
 # 微光協定
 
-一款把程式指令融入機器人冒險的網頁遊戲原型。排好前進與轉向指令，收集記憶核心，再帶小光抵達出口。
+一款把程式指令融入機器人冒險的網頁遊戲原型。在四個關卡中安排前進、循環和條件指令，收集物品並帶小光抵達出口。
 
 ## 本機遊玩
 
@@ -9,6 +9,13 @@
 ## 線上遊玩
 
 [在 GitHub Pages 開始遊玩](https://timcsy.github.io/glimmer-protocol-game/)
+
+## 開發知識
+
+- [計畫與路線圖](knowledge/plan.md)
+- [開發經驗](knowledge/experience.md)
+- [初學者試玩指南](knowledge/playtest-guide.md)
+- [待外部支援事項與推薦](knowledge/decision.md)
 
 ## 發布到 GitHub Pages
 
